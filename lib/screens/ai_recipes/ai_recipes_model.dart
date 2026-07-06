@@ -239,7 +239,7 @@ Requirements:
       throw Exception('API error or empty response (Status: ${response.statusCode})');
 
     } catch (e) {
-      print('Gemini API call failed, using fallback recipes: $e');
+      debugPrint('Gemini API call failed, using fallback recipes: $e');
       final fallbackList = getFallbackRecipes(mainIng, selectedIngNames, _selectedMealType, _selectedCookingStyle);
       
       fallbackList.sort((a, b) {
@@ -270,7 +270,7 @@ Requirements:
         return product;
       }
     } catch (e) {
-      print('Barcode lookup error: $e');
+      debugPrint('Barcode lookup error: $e');
     }
     return null;
   }
