@@ -1,8 +1,29 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
+import '../../backend/models.dart';
 import '../../backend/open_food_facts_service.dart';
-import '../../backend/daos/saved_recipe_dao.dart';
+
+// Local helper class to bridge the mock recipe list with SavedRecipeModel
+class Recipe extends SavedRecipeModel {
+  final String duration;
+
+  Recipe({
+    required super.id,
+    required super.title,
+    required this.duration,
+    required super.ingredients,
+    required super.instructions,
+    required super.calories,
+    required double protein,
+    required double carbs,
+    required double fat,
+  }) : super(
+          imageUrl: '',
+          protein: protein.round(),
+          carbs: carbs.round(),
+          fat: fat.round(),
+        );
+}
 
 class AiRecipesViewModel extends ChangeNotifier {
   bool _isSearching = false;
@@ -170,7 +191,7 @@ class AiRecipesViewModel extends ChangeNotifier {
   List<Recipe> _getSpecializedRecipes(String mainIng, List<String> ingredientNames, String mealType, String cookingStyle) {
     final list = <Recipe>[];
     final mainLower = mainIng.toLowerCase();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    const timestamp = 'static';
 
     if (mainLower.contains('maggi')) {
       list.add(Recipe(

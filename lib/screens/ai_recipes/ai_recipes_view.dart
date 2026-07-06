@@ -3,13 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:go_router/go_router.dart';
 import 'ai_recipes_model.dart';
 import 'barcode_scanner_view.dart';
-import '../../backend/daos/saved_recipe_dao.dart';
 import '../../providers/db_provider.dart';
-import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/app_bottom_navigation_bar.dart';
 import '../../widgets/recipe_card.dart';
 
 class AiRecipesView extends StatefulWidget {
@@ -61,6 +59,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
         ];
 
         return Dialog(
+          backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(20.0),
@@ -70,12 +69,17 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Barcode Scanner',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Chivo'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Chivo',
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: Icon(Icons.close, color: isDark ? Colors.white : Colors.black),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -105,7 +109,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                                 color: Colors.red,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.red.withOpacity(0.8),
+                                    color: Colors.red.withValues(alpha: 0.8),
                                     blurRadius: 4,
                                     spreadRadius: 1,
                                   ),
@@ -143,10 +147,13 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                 const SizedBox(height: 12),
                 TextField(
                   keyboardType: TextInputType.number,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                   decoration: InputDecoration(
                     labelText: 'Enter Barcode Number',
+                    labelStyle: const TextStyle(color: Colors.grey),
                     hintText: 'e.g. 8901719101037',
-                    suffixIcon: const Icon(Icons.search),
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    suffixIcon: const Icon(Icons.search, color: Colors.grey),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
@@ -154,6 +161,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                     if (val.trim().isEmpty) return;
                     Navigator.pop(context);
                     
+                    if (!context.mounted) return;
                     toastification.show(
                       context: context,
                       title: const Text('Looking up product...'),
@@ -163,6 +171,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                     );
 
                     final product = await model.lookupBarcode(val.trim());
+                    if (!context.mounted) return;
                     if (product != null) {
                       model.addIngredient(product);
                       toastification.show(
@@ -195,6 +204,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                       onPressed: () async {
                         Navigator.pop(context);
                         
+                        if (!context.mounted) return;
                         toastification.show(
                           context: context,
                           title: const Text('Looking up product...'),
@@ -204,6 +214,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                         );
 
                         final product = await model.lookupBarcode(item['code']!);
+                        if (!context.mounted) return;
                         if (product != null) {
                           model.addIngredient(product);
                           toastification.show(
@@ -284,215 +295,199 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
       create: (_) => AiRecipesViewModel(),
       child: Consumer<AiRecipesViewModel>(
         builder: (context, model, child) {
-          final dbFuture = dbProvider.db;
-
           if (_showDetails && _selectedRecipe != null) {
             final recipe = _selectedRecipe!;
-            return FutureBuilder<Database>(
-              future: dbFuture,
-              builder: (context, dbSnapshot) {
-                final isSavedFuture = dbSnapshot.hasData 
-                    ? SavedRecipeDao.isSaved(dbSnapshot.data!, recipe.id)
-                    : Future.value(false);
+            final isSaved = dbProvider.isRecipeSaved(recipe.id);
 
-                return FutureBuilder<bool>(
-                  future: isSavedFuture,
-                  builder: (context, saveSnapshot) {
-                    final isSaved = saveSnapshot.data ?? false;
-
-                    return Scaffold(
-                      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
-                      appBar: AppBar(
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                        leading: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.black),
-                          onPressed: () {
-                            setState(() {
-                              _showDetails = false;
-                              _selectedRecipe = null;
-                            });
+            return Scaffold(
+              backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
+                  onPressed: () {
+                    setState(() {
+                      _showDetails = false;
+                      _selectedRecipe = null;
+                    });
+                  },
+                ),
+                title: Text(
+                  'AI Recipes',
+                  style: TextStyle(
+                    fontFamily: 'Chivo',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
+                actions: [
+                  IconButton(
+                    icon: Icon(Icons.favorite_border, color: isDark ? Colors.white : const Color(0xFF1C1C1E)),
+                    onPressed: () => context.push('/saved_recipes'),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(right: 16.0),
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundImage: NetworkImage(
+                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 2),
+              body: SafeArea(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  children: [
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            recipe.title,
+                            style: TextStyle(
+                              fontFamily: 'Chivo',
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            isSaved ? Icons.favorite : Icons.favorite_border,
+                            color: isSaved ? const Color(0xFF8B80F9) : (isDark ? Colors.white : Colors.black87),
+                            size: 26,
+                          ),
+                          onPressed: () async {
+                            if (isSaved) {
+                              await dbProvider.deleteRecipe(recipe.id);
+                              if (!context.mounted) return;
+                              toastification.show(
+                                context: context,
+                                title: const Text('Recipe removed from Saved'),
+                                type: ToastificationType.info,
+                                style: ToastificationStyle.flat,
+                                autoCloseDuration: const Duration(seconds: 2),
+                              );
+                            } else {
+                              await dbProvider.saveRecipe(recipe);
+                              if (!context.mounted) return;
+                              toastification.show(
+                                context: context,
+                                title: const Text('Recipe saved successfully!'),
+                                type: ToastificationType.success,
+                                style: ToastificationStyle.flat,
+                                autoCloseDuration: const Duration(seconds: 2),
+                              );
+                            }
+                            setState(() {});
                           },
                         ),
-                        title: const Text(
-                          'AI Recipes',
-                          style: TextStyle(
-                            fontFamily: 'Chivo',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22,
-                            color: Colors.black,
-                          ),
-                        ),
-                        actions: [
-                          IconButton(
-                            icon: const Icon(Icons.favorite_border, color: Color(0xFF1C1C1E)),
-                            onPressed: () => context.push('/saved_recipes'),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.only(right: 16.0),
-                            child: CircleAvatar(
-                              radius: 18,
-                              backgroundImage: NetworkImage(
-                                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100',
-                              ),
+                      ],
+                    ),
+                    Text(
+                      recipe.duration,
+                      style: const TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF0EFFF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildFigmaNutritionItem(context, 'Calories', '${recipe.calories}', 'kcal'),
+                          _buildFigmaNutritionItem(context, 'Protein', '${recipe.protein.round()}', 'g'),
+                          _buildFigmaNutritionItem(context, 'Carbs', '${recipe.carbs.round()}', 'g'),
+                          _buildFigmaNutritionItem(context, 'Fat', '${recipe.fat.round()}', 'g'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    Text(
+                      'Ingredients',
+                      style: TextStyle(
+                        fontFamily: 'Chivo',
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...recipe.ingredients.map((ing) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          const Text('  •  ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          Expanded(
+                            child: Text(
+                              ing,
+                              style: TextStyle(fontSize: 15, color: isDark ? Colors.white70 : Colors.black87),
                             ),
                           ),
                         ],
                       ),
-                      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
-                      body: SafeArea(
-                        child: ListView(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    )),
+                    const SizedBox(height: 25),
+                    Text(
+                      'Instructions',
+                      style: TextStyle(
+                        fontFamily: 'Chivo',
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    ...recipe.instructions.asMap().entries.map((entry) {
+                      final idx = entry.key + 1;
+                      final step = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    recipe.title,
-                                    style: const TextStyle(
-                                      fontFamily: 'Chivo',
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    isSaved ? Icons.favorite : Icons.favorite_border,
-                                    color: isSaved ? const Color(0xFF8B80F9) : Colors.black87,
-                                    size: 26,
-                                  ),
-                                  onPressed: () async {
-                                    if (dbSnapshot.hasData) {
-                                      final db = dbSnapshot.data!;
-                                      if (isSaved) {
-                                        await SavedRecipeDao.deleteRecipe(db, recipe.id);
-                                        toastification.show(
-                                          context: context,
-                                          title: const Text('Recipe removed from Saved'),
-                                          type: ToastificationType.info,
-                                          style: ToastificationStyle.flat,
-                                          autoCloseDuration: const Duration(seconds: 2),
-                                        );
-                                      } else {
-                                        await SavedRecipeDao.saveRecipe(db, recipe);
-                                        toastification.show(
-                                          context: context,
-                                          title: const Text('Recipe saved successfully!'),
-                                          type: ToastificationType.success,
-                                          style: ToastificationStyle.flat,
-                                          autoCloseDuration: const Duration(seconds: 2),
-                                        );
-                                      }
-                                      setState(() {});
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                            Text(
-                              recipe.duration,
-                              style: const TextStyle(color: Colors.grey, fontSize: 14),
-                            ),
-                            const SizedBox(height: 20),
                             Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0EFFF),
-                                borderRadius: BorderRadius.circular(12),
+                              width: 24,
+                              height: 24,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF8B80F9),
+                                shape: BoxShape.circle,
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  _buildFigmaNutritionItem('Calories', '${recipe.calories}', 'kcal'),
-                                  _buildFigmaNutritionItem('Protein', '${recipe.protein.round()}', 'g'),
-                                  _buildFigmaNutritionItem('Carbs', '${recipe.carbs.round()}', 'g'),
-                                  _buildFigmaNutritionItem('Fat', '${recipe.fat.round()}', 'g'),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 25),
-                            const Text(
-                              'Ingredients',
-                              style: TextStyle(
-                                fontFamily: 'Chivo',
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            ...recipe.ingredients.map((ing) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                children: [
-                                  const Text('  •  ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                  Expanded(
-                                    child: Text(
-                                      ing,
-                                      style: const TextStyle(fontSize: 15, color: Colors.black87),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )),
-                            const SizedBox(height: 25),
-                            const Text(
-                              'Instructions',
-                              style: TextStyle(
-                                fontFamily: 'Chivo',
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 15),
-                            ...recipe.instructions.asMap().entries.map((entry) {
-                              final idx = entry.key + 1;
-                              final step = entry.value;
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF8B80F9),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        '$idx',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        step,
-                                        style: const TextStyle(fontSize: 15, height: 1.4, color: Colors.black87),
-                                      ),
-                                    ),
-                                  ],
+                              alignment: Alignment.center,
+                              child: Text(
+                                '$idx',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
                                 ),
-                              );
-                            }),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                step,
+                                style: TextStyle(fontSize: 15, height: 1.4, color: isDark ? Colors.white70 : Colors.black87),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
+                      );
+                    }),
+                  ],
+                ),
+              ),
             );
           }
 
@@ -502,18 +497,18 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
               backgroundColor: Colors.transparent,
               elevation: 0,
               automaticallyImplyLeading: false,
-              title: const Text(
+              title: Text(
                 'AI Recipes',
                 style: TextStyle(
                   fontFamily: 'Chivo',
                   fontWeight: FontWeight.bold,
                   fontSize: 24,
-                  color: Colors.black,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.favorite_border, color: Color(0xFF1C1C1E)),
+                  icon: Icon(Icons.favorite_border, color: isDark ? Colors.white : const Color(0xFF1C1C1E)),
                   onPressed: () => context.push('/saved_recipes'),
                 ),
                 const Padding(
@@ -527,20 +522,20 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                 ),
               ],
             ),
-            bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+            bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 2),
             body: SafeArea(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
                   const SizedBox(height: 10),
-                  const Text(
+                  Text(
                     'Create delicious recipes from ingredients!',
                     style: TextStyle(
                       fontFamily: 'Chivo',
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       height: 1.2,
-                      color: Colors.black,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -581,9 +576,12 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                         child: TextField(
                           controller: _ingredientController,
                           focusNode: _ingredientFocusNode,
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black),
                           decoration: InputDecoration(
                             labelText: 'Add Ingredient',
+                            labelStyle: const TextStyle(color: Colors.grey),
                             hintText: 'Start typing',
+                            hintStyle: const TextStyle(color: Colors.grey),
                             prefixIcon: const Icon(Icons.search, color: Colors.grey),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -615,6 +613,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                             MaterialPageRoute(builder: (_) => const BarcodeScannerView()),
                           );
 
+                          if (!context.mounted) return;
                           if (code != null && code.trim().isNotEmpty) {
                             toastification.show(
                               context: context,
@@ -625,6 +624,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                             );
 
                             final product = await model.lookupBarcode(code);
+                            if (!context.mounted) return;
                             if (product != null) {
                               model.addIngredient(product);
                               toastification.show(
@@ -697,7 +697,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                               decoration: BoxDecoration(
                                 color: isDark ? const Color(0xFF2C2C2E) : Colors.grey[50],
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.grey[200]!),
+                                border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -750,8 +750,8 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(color: Colors.black87, width: 1),
+                                  color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                                  border: Border.all(color: isDark ? Colors.white70 : Colors.black87, width: 1),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -759,21 +759,21 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                                   children: [
                                     Text(
                                       ing.name,
-                                      style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w500),
+                                      style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 13, fontWeight: FontWeight.w500),
                                     ),
                                     const SizedBox(width: 6),
                                     GestureDetector(
                                       onTap: () => model.removeIngredient(ing),
                                       child: Container(
                                         padding: const EdgeInsets.all(1.5),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.black,
+                                        decoration: BoxDecoration(
+                                          color: isDark ? Colors.white : Colors.black,
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.close,
                                           size: 10,
-                                          color: Colors.white,
+                                          color: isDark ? Colors.black : Colors.white,
                                         ),
                                       ),
                                     ),
@@ -796,6 +796,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                               model.clearSearch();
                             }
                             await model.generateRecipe();
+                            if (!context.mounted) return;
                             if (model.errorMessage.isNotEmpty) {
                               toastification.show(
                                 context: context,
@@ -835,101 +836,86 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
                   if (model.generatedRecipes.isNotEmpty && !model.isGenerating) ...[
                     const Divider(),
                     const SizedBox(height: 10),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
                         'Generated Recipes',
                         style: TextStyle(
                           fontFamily: 'Chivo',
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                       ),
                     ),
                     ...model.generatedRecipes.map((recipe) {
-                      return FutureBuilder<Database>(
-                        future: dbFuture,
-                        builder: (context, dbSnapshot) {
-                          final isSavedFuture = dbSnapshot.hasData 
-                              ? SavedRecipeDao.isSaved(dbSnapshot.data!, recipe.id)
-                              : Future.value(false);
+                      final isSaved = dbProvider.isRecipeSaved(recipe.id);
 
-                          return FutureBuilder<bool>(
-                            future: isSavedFuture,
-                            builder: (context, saveSnapshot) {
-                              final isSaved = saveSnapshot.data ?? false;
-
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedRecipe = recipe;
-                                    _showDetails = true;
-                                  });
-                                },
-                                child: Stack(
-                                  children: [
-                                    RecipeCard(
-                                      title: recipe.title,
-                                      duration: recipe.duration,
-                                      horizontalOuterPadding: 0,
-                                      widthFactor: 1.0,
-                                      nutritionInfo: Row(
-                                        children: [
-                                          Text(
-                                            '${recipe.calories} kcal  •  P: ${recipe.protein.round()}g  C: ${recipe.carbs.round()}g  F: ${recipe.fat.round()}g',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Positioned(
-                                      right: 12,
-                                      top: 20,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          isSaved ? Icons.favorite : Icons.favorite_border,
-                                          color: isSaved ? const Color(0xFF8B80F9) : Colors.black87,
-                                        ),
-                                        onPressed: () async {
-                                          if (dbSnapshot.hasData) {
-                                            final db = dbSnapshot.data!;
-                                            if (isSaved) {
-                                              await SavedRecipeDao.deleteRecipe(db, recipe.id);
-                                              toastification.show(
-                                                context: context,
-                                                title: const Text('Recipe removed from Saved'),
-                                                type: ToastificationType.info,
-                                                style: ToastificationStyle.flat,
-                                                autoCloseDuration: const Duration(seconds: 2),
-                                              );
-                                            } else {
-                                              await SavedRecipeDao.saveRecipe(db, recipe);
-                                              toastification.show(
-                                                context: context,
-                                                title: const Text('Recipe saved successfully!'),
-                                                type: ToastificationType.success,
-                                                style: ToastificationStyle.flat,
-                                                autoCloseDuration: const Duration(seconds: 2),
-                                              );
-                                            }
-                                            setState(() {});
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedRecipe = recipe;
+                            _showDetails = true;
+                          });
                         },
+                        child: Stack(
+                          children: [
+                            RecipeCard(
+                              title: recipe.title,
+                              duration: recipe.duration,
+                              horizontalOuterPadding: 0,
+                              widthFactor: 1.0,
+                              nutritionInfo: Row(
+                                children: [
+                                  Text(
+                                    '${recipe.calories} kcal  •  P: ${recipe.protein.round()}g  C: ${recipe.carbs.round()}g  F: ${recipe.fat.round()}g',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Positioned(
+                              right: 12,
+                              top: 20,
+                              child: IconButton(
+                                icon: Icon(
+                                  isSaved ? Icons.favorite : Icons.favorite_border,
+                                  color: isSaved ? const Color(0xFF8B80F9) : (isDark ? Colors.white : Colors.black87),
+                                ),
+                                onPressed: () async {
+                                  if (isSaved) {
+                                    await dbProvider.deleteRecipe(recipe.id);
+                                    if (!context.mounted) return;
+                                    toastification.show(
+                                      context: context,
+                                      title: const Text('Recipe removed from Saved'),
+                                      type: ToastificationType.info,
+                                      style: ToastificationStyle.flat,
+                                      autoCloseDuration: const Duration(seconds: 2),
+                                    );
+                                  } else {
+                                    await dbProvider.saveRecipe(recipe);
+                                    if (!context.mounted) return;
+                                    toastification.show(
+                                      context: context,
+                                      title: const Text('Recipe saved successfully!'),
+                                      type: ToastificationType.success,
+                                      style: ToastificationStyle.flat,
+                                      autoCloseDuration: const Duration(seconds: 2),
+                                    );
+                                  }
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ],
               ),
@@ -940,7 +926,8 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
     );
   }
 
-  Widget _buildFigmaNutritionItem(String label, String value, String unit) {
+  Widget _buildFigmaNutritionItem(BuildContext context, String label, String value, String unit) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         Text(
@@ -950,7 +937,7 @@ class _AiRecipesViewState extends State<AiRecipesView> with SingleTickerProvider
         const SizedBox(height: 6),
         Text(
           value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
         ),
         const SizedBox(height: 2),
         Text(

@@ -1,50 +1,41 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+// IMPORTANT: Make sure this path points to where your actual model file lives!
+import 'models/user_model.dart';
 
 class DbService {
-  static final DbService instance = DbService._init();
-  static Database? _database;
+  DbService._();
 
-  DbService._init();
+  static final DbService instance = DbService._();
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB('nourish.db');
-    return _database!;
+  // In Hive, we use "Boxes" instead of tables.
+  static const String userProfileBoxName = 'user_profile';
+
+  bool _isInitialized = false;
+
+  /// Call this once in your main.dart before runApp()
+  Future<void> init() async {
+    if (_isInitialized) return;
+
+    // Initializes Hive with the correct local directory for Flutter
+    await Hive.initFlutter();
+
+    // Register your data model adapter here
+    Hive.registerAdapter(UserAdapter());
+
+    // Open the box so it is ready for synchronous read/write access later
+    await Hive.openBox(userProfileBoxName);
+
+    _isInitialized = true;
   }
 
-  Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
-
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createDB,
-    );
-  }
-
-  Future _createDB(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE saved_recipes (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        duration TEXT NOT NULL,
-        ingredients TEXT NOT NULL,
-        instructions TEXT NOT NULL,
-        calories INTEGER NOT NULL,
-        protein REAL NOT NULL,
-        carbs REAL NOT NULL,
-        fat REAL NOT NULL,
-        createdAt TEXT NOT NULL
-      )
-    ''');
-  }
-
-  Future close() async {
-    final db = _database;
-    if (db != null) {
-      await db.close();
+  /// A synchronous getter to easily access your profile box anywhere
+  Box get userProfileBox {
+    if (!Hive.isBoxOpen(userProfileBoxName)) {
+      throw Exception(
+        'Box $userProfileBoxName is not open. Call init() first.',
+      );
     }
+    return Hive.box(userProfileBoxName);
   }
 }

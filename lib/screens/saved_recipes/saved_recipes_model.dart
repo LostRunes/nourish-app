@@ -1,34 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import '../../backend/daos/saved_recipe_dao.dart';
+import '../../backend/models.dart';
+import '../../providers/db_provider.dart';
 
 class SavedRecipesViewModel extends ChangeNotifier {
-  List<Recipe> _allRecipes = [];
-  List<Recipe> _filteredRecipes = [];
-  bool _isLoading = false;
+  final DbProvider _dbProvider;
+  List<SavedRecipeModel> _filteredRecipes = [];
   String _searchQuery = '';
 
-  List<Recipe> get savedRecipes => _filteredRecipes;
-  bool get isLoading => _isLoading;
-  String get searchQuery => _searchQuery;
-
-  // Load all recipes from database
-  Future<void> loadSavedRecipes(Database db) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      _allRecipes = await SavedRecipeDao.getSavedRecipes(db);
-      _filterRecipes();
-    } catch (e) {
-      print('Error loading saved recipes: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+  SavedRecipesViewModel(this._dbProvider) {
+    _filterRecipes();
+    _dbProvider.addListener(_onDbChanged);
   }
 
-  // Filter recipes based on search query
+  @override
+  void dispose() {
+    _dbProvider.removeListener(_onDbChanged);
+    super.dispose();
+  }
+
+  void _onDbChanged() {
+    _filterRecipes();
+    notifyListeners();
+  }
+
+  List<SavedRecipeModel> get savedRecipes => _filteredRecipes;
+  String get searchQuery => _searchQuery;
+
   void search(String query) {
     _searchQuery = query;
     _filterRecipes();
@@ -36,31 +33,23 @@ class SavedRecipesViewModel extends ChangeNotifier {
   }
 
   void _filterRecipes() {
+    final allRecipes = _dbProvider.savedRecipes;
     if (_searchQuery.trim().isEmpty) {
-      _filteredRecipes = List.from(_allRecipes);
+      _filteredRecipes = List.from(allRecipes);
     } else {
       final query = _searchQuery.toLowerCase();
-      _filteredRecipes = _allRecipes.where((recipe) {
+      _filteredRecipes = allRecipes.where((recipe) {
         return recipe.title.toLowerCase().contains(query) ||
             recipe.ingredients.any((ing) => ing.toLowerCase().contains(query));
       }).toList();
     }
   }
 
-  // Delete recipe from database
-  Future<void> deleteRecipe(Database db, String id) async {
-    try {
-      await SavedRecipeDao.deleteRecipe(db, id);
-      _allRecipes.removeWhere((r) => r.id == id);
-      _filterRecipes();
-      notifyListeners();
-    } catch (e) {
-      print('Error deleting recipe: $e');
-    }
+  Future<void> deleteRecipe(String id) async {
+    await _dbProvider.deleteRecipe(id);
   }
 
-  // Check if a recipe is saved
   bool isRecipeSaved(String id) {
-    return _allRecipes.any((r) => r.id == id);
+    return _dbProvider.isRecipeSaved(id);
   }
 }
