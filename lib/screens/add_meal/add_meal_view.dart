@@ -16,7 +16,17 @@ class AddMealView extends StatelessWidget {
     final dbProvider = Provider.of<DbProvider>(context, listen: false);
     final dateString = "${dbProvider.selectedDate.year}-${dbProvider.selectedDate.month.toString().padLeft(2, '0')}-${dbProvider.selectedDate.day.toString().padLeft(2, '0')}";
 
-    return ChangeNotifierProvider(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/food_log');
+        }
+      },
+      child: ChangeNotifierProvider(
       create: (_) => AddMealViewModel(),
       child: Consumer<AddMealViewModel>(
         builder: (context, model, child) {
@@ -309,6 +319,6 @@ class AddMealView extends StatelessWidget {
           );
         },
       ),
-    );
+    ),);
   }
 }
