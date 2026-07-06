@@ -62,7 +62,7 @@ class AddMealView extends StatelessWidget {
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButtonFormField<String>(
-                                value: model.selectedMealType,
+                                initialValue: model.selectedMealType,
                                 decoration: const InputDecoration(
                                   labelText: 'Choose Meal Type',
                                   labelStyle: TextStyle(color: Colors.grey, fontSize: 14),

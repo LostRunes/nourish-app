@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
 
 /// Center-aligned text field used across the onboarding flow.
@@ -57,7 +56,7 @@ class OnboardingTextField extends StatelessWidget {
           horizontal: 16,
           vertical: 18,
         ),
-        enabledBorder: _border(AppColors.coolGray.withOpacity(0.55)),
+        enabledBorder: _border(AppColors.coolGray.withValues(alpha: 0.55)),
         focusedBorder: _border(AppColors.primary),
         errorBorder: _border(AppColors.error),
         focusedErrorBorder: _border(AppColors.error),

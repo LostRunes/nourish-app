@@ -81,8 +81,14 @@ class FoodLogView extends StatelessWidget {
       }
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        context.go('/home');
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -386,7 +392,7 @@ class FoodLogView extends StatelessWidget {
           child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
       ),
-    );
+    ),);
   }
 
   Widget _buildMacroLegendItem(String label, String value, Color color) {

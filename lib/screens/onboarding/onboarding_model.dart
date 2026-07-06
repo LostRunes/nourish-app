@@ -40,8 +40,8 @@ class OnboardingViewModel extends ChangeNotifier {
     final profile = await dbProvider.loadUserProfile();
     if (profile == null) return;
 
-    nameController.text = profile.name ?? '';
-    ageController.text = profile.age?.toString() ?? '';
+    nameController.text = profile.name;
+    ageController.text = profile.age.toString();
     _selectedGender = profile.gender;
     _selectedActivity = profile.activityLevel;
     heightController.text = _formatMetric(profile.heightCm);
