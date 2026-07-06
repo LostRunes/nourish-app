@@ -10,6 +10,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../providers/db_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
+import '../../widgets/empty_widget.dart';
 import '../../backend/models.dart';
 
 class HomeView extends StatelessWidget {
@@ -18,6 +19,7 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dbProvider = Provider.of<DbProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final authProvider = Provider.of<AuthProvider>(context);
     final profilePhoto = dbProvider.currentUser?.profilePhotoBase64;
     final userName = dbProvider.currentUser?.name.isNotEmpty == true
@@ -74,7 +76,7 @@ class HomeView extends StatelessWidget {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? Colors.black : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -91,12 +93,12 @@ class HomeView extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Text(
+                            Text(
                               'Nourish ',
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                                color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
                             const _GdgLogo(),
@@ -144,11 +146,11 @@ class HomeView extends StatelessWidget {
                     Text.rich(
                       TextSpan(
                         children: [
-                          const TextSpan(
+                          TextSpan(
                             text: 'Hello, ',
                             style: TextStyle(
                               fontSize: 26,
-                              color: Colors.black,
+                              color: isDark ? Colors.white : Colors.black,
                             ),
                           ),
                           TextSpan(
@@ -170,12 +172,12 @@ class HomeView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       "Today's Progress",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -226,6 +228,7 @@ class HomeView extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _buildMacroProgressItem(
+                            context,
                             'Protein',
                             todayProtein,
                             proteinPercent,
@@ -236,6 +239,7 @@ class HomeView extends StatelessWidget {
                         const SizedBox(width: 16),
                         Expanded(
                           child: _buildMacroProgressItem(
+                            context,
                             'Carbs',
                             todayCarbs,
                             carbsPercent,
@@ -246,6 +250,7 @@ class HomeView extends StatelessWidget {
                         const SizedBox(width: 16),
                         Expanded(
                           child: _buildMacroProgressItem(
+                            context,
                             'Fat',
                             todayFat,
                             fatPercent,
@@ -322,17 +327,7 @@ class HomeView extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     if (todayLogs.isEmpty) ...[
-                      const SizedBox(height: 12),
-                      const Center(
-                        child: Text(
-                          'No meals logged for today',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
+                      const EmptyWidget(message: 'No meals logged for today'),
                     ],
                     if (breakfastLogs.isNotEmpty) ...[
                       _buildRecentMealSection(
@@ -387,6 +382,7 @@ class HomeView extends StatelessWidget {
   }
 
   Widget _buildMacroProgressItem(
+    BuildContext context,
     String label,
     double current,
     double percent,
@@ -414,10 +410,10 @@ class HomeView extends StatelessWidget {
         ),
         Text(
           '${current.toInt()} g',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: _getTextColor(context),
           ),
         ),
       ],
@@ -435,9 +431,9 @@ class HomeView extends StatelessWidget {
       child: Container(
         height: 100,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _getCardColor(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFF1EFEF), width: 1.5),
+          border: Border.all(color: _getBorderColor(context), width: 1.5),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -446,9 +442,9 @@ class HomeView extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Colors.black54,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black54,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -475,10 +471,10 @@ class HomeView extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: _getTextColor(context),
               ),
             ),
             const Spacer(),
@@ -513,10 +509,10 @@ class HomeView extends StatelessWidget {
                     children: [
                       Text(
                         log.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black,
+                          color: _getTextColor(context),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -546,6 +542,17 @@ class HomeView extends StatelessWidget {
     );
   }
 
+  Color _getTextColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black;
+  }
+
+  Color _getCardColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white;
+  }
+
+  Color _getBorderColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2C2C2E) : const Color(0xFFF1EFEF);
+  }
 }
 
 class _GdgLogoPainter extends CustomPainter {

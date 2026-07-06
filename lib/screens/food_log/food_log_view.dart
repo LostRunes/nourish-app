@@ -9,6 +9,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../providers/db_provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/app_bottom_navigation_bar.dart';
+import '../../widgets/empty_widget.dart';
 import '../../backend/models.dart';
 
 class FoodLogView extends StatelessWidget {
@@ -17,6 +18,7 @@ class FoodLogView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dbProvider = Provider.of<DbProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateLogs = dbProvider.selectedDateLogs;
     final profilePhoto = dbProvider.currentUser?.profilePhotoBase64;
 
@@ -88,7 +90,7 @@ class FoodLogView extends StatelessWidget {
         context.go('/home');
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? Colors.black : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -103,12 +105,12 @@ class FoodLogView extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Food Log',
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                         GestureDetector(
@@ -322,17 +324,7 @@ class FoodLogView extends StatelessWidget {
                       ),
                     ),
                     if (dateLogs.isEmpty) ...[
-                      const SizedBox(height: 24),
-                      const Center(
-                        child: Text(
-                          'No meals logged for this day',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
+                      const EmptyWidget(message: 'No meals logged for this day'),
                     ],
                     if (breakfastLogs.isNotEmpty) ...[
                       const SizedBox(height: 16),
